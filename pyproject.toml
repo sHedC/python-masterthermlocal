@@ -3,9 +3,9 @@ requires = ["setuptools>=61.2", "setuptools-scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "masterthermlocal"
+name = "masterthermconnect"
 version = "0.0.0"
-description = "Python 3 API wrapper for Mastertherm Local Bus"
+description = "Python 3 API wrapper for Mastertherm API & Local Bus"
 readme = "README.md"
 authors = [{ name = "Richard Holmes", email = "richard@shedc.uk" }]
 license = { file = "LICENSE" }
@@ -22,10 +22,10 @@ requires-python = ">=3.11,<3.14"
 dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
 
 [project.urls]
-Homepage = "https://github.com/sHedC/python-masterthermlocal"
+Homepage = "https://github.com/sHedC/python-masterthermconnect"
 
 [project.scripts]
-masterthermlocal = "masterthermlocal.__main__:main"
+masterthermconnect = "masterthermconnect.__main__:main"
 
 [tool.bumpver]
 current_version = "0.0.0"
@@ -40,7 +40,7 @@ push = true
     'current_version = "{version}"',
     'version = "{pep440_version}"',
 ]
-"masterthermlocal/__version__.py" = ["{pep440_version}"]
+"masterthermconnect/__version__.py" = ["{pep440_version}"]
 
 [tool.isort]
 multi_line_output = 3
@@ -60,7 +60,7 @@ sections = [
     "LOCALFOLDER",
 ]
 default_section = "THIRDPARTY"
-known_first_party = ["masterthermlocal", "tests"]
+known_first_party = ["masterthermconnect", "tests"]
 forced_separate = ["tests"]
 combine_as_imports = true
 profile = "black"
@@ -93,7 +93,7 @@ exclude_lines = [
 show_missing = true
 
 [tool.coverage.run]
-source = ["masterthermlocal"]
+source = ["masterthermconnect"]
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "session"
