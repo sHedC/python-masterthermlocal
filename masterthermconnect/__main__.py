@@ -1,9 +1,14 @@
 """Main Program, for Testing Mainly."""
 
 import argparse
+import asyncio
+import logging
 import sys
 
 import masterthermconnect.__version__ as __version__
+from masterthermconnect.modbus import MasterthermModbus
+
+_LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 def get_arguments(argv=None) -> argparse.Namespace:
@@ -16,8 +21,7 @@ def get_arguments(argv=None) -> argparse.Namespace:
             "use with caution!!!"
         ),
         epilog=(
-            "DO NOT RUN THIS TOO FREQENTLY, IT IS POSSIBLE TO GET YOUR IP BLOCKED, "
-            "I think new new API is sensitive to logging in too frequently."
+            "There is no protection against updating registers, use this to write with total caution."
         ),
     )
     parser.add_argument(
@@ -26,8 +30,37 @@ def get_arguments(argv=None) -> argparse.Namespace:
         version=f"Mastertherm Connect CLI Version: {__version__}",
         help="Show the version of the Mastertherm Connect CLI.",
     )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        help="Print debugging statements.",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Print verbose statements.",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
+    )
 
     return parser.parse_args(argv)
+
+
+async def get_command(login_user: str, login_pass: str, args) -> int:
+    """Get Command to get data/ registry/ devices."""
+    modbus = MasterthermModbus("172.16.46.100", "mt_0")
+    await modbus.connect()
+
+    result = await modbus.get_registers(1)
+    _LOGGER.warning("Result: %s", result)
+
+    modbus.close()
+    return 0
 
 
 def main(argv=None) -> int:
@@ -37,7 +70,7 @@ def main(argv=None) -> int:
     except SystemExit:
         return -1
 
-    return 0
+    return asyncio.run(get_command("login_user", "login_pass", args))
 
 
 if __name__ == "__main__":
