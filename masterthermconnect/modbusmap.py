@@ -19,11 +19,11 @@ MAPPING = {
     "mt_0": {
         "A": {"type": "hold", "start": 0},
         "D": {"type": "coil", "start": 0},
-        "I": {"type": "hold", "start": 501},
+        "I": {"type": "hold", "start": 5001},
     },
     "mt_1": {
-        "A": {"type": "hold", "start": 3},
-        "D": {"type": "coil", "start": 503},
-        "I": {"type": "hold", "start": 999},
+        "A": {"type": "hold", "start": 2},
+        "D": {"type": "coil", "start": 2,
+        "I": {"type": "hold", "start": 5003},
     },
 }
