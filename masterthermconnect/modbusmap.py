@@ -23,7 +23,7 @@ MAPPING = {
     },
     "mt_1": {
         "A": {"type": "hold", "start": 2},
-        "D": {"type": "coil", "start": 2,
+        "D": {"type": "coil", "start": 2},
         "I": {"type": "hold", "start": 5003},
     },
 }
