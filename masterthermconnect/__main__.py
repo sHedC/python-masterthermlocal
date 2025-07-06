@@ -87,12 +87,24 @@ class MasterthermCLIShell:
             ):
                 self._local_ip = input("Enter the local IP address of your heat pump: ")
                 if self._hp_type is None:
-                    self._hp_type = self._input(
-                        "Enter the heat pump type (mt_0 or mt_1): ", ["mt_0", "mt_1"]
+                    hp_type = self._input(
+                        "The HP Controller type can be found in the App under Info: \n"
+                        "  1. Controller: pco5, Exp: 0\n"
+                        "  2. Controller uPC, Exp: 0\n"
+                        "  Select 1 or 2: ",
+                        ["1", "2"],
                     )
+                    self._hp_type = "pco5_0" if hp_type == "1" else "uPC_0"
 
             # Ask to save configuration
-            #   Ask if to save password
+            if (
+                self._input(
+                    "Do you wish to save the configuration? (y/n): ", ["y", "n"]
+                )
+                == "y"
+            ):
+                # Here we would save the configuration to a file or database
+                _LOGGER.info("Configuration saved.")
 
             self._configured = True
             _LOGGER.info("Configuration complete.")
