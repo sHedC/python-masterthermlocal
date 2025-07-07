@@ -1,6 +1,8 @@
 """Main Program, for Testing Mainly."""
 
+import argparse
 import asyncio
+import configparser
 import logging
 import sys
 
@@ -15,7 +17,12 @@ class MasterthermCLIShell:
 
     def __init__(self) -> None:
         """Initialise the Mastertherm Connect CLI Shell."""
+        self._config_file: str = "masterthermconnect.cfg"
+
         self._configured = False
+        self._api_configured: bool = False
+        self._local_configured: bool = False
+
         self._api_version: str | None = None
         self._username: str | None = None
         self._password: str | None = None
@@ -41,6 +48,31 @@ class MasterthermCLIShell:
         modbus.close()
         return 0
 
+    async def load_config(self) -> None:
+        """Load configuration from a file."""
+        config = configparser.ConfigParser()
+        config.read(self._config_file)
+
+        if "SETUP" in config:
+            self._api_configured = config.getboolean(
+                "SETUP", "Api_Configure", fallback=False
+            )
+            self._local_configured = config.getboolean(
+                "SETUP", "Local_Configure", fallback=False
+            )
+
+            if self._api_configured:
+                self._api_version = config.get("API", "api_version", fallback=None)
+                self._username = config.get("API", "username", fallback=None)
+                self._password = config.get("API", "password", fallback=None)
+                self._hp_type = config.get("API", "hp_type", fallback=None)
+
+            if self._local_configured:
+                self._local_ip = config.get("LOCAL", "local_ip", fallback=None)
+                self._hp_type = config.get("LOCAL", "hp_type", fallback=None)
+        else:
+            _LOGGER.error("Configuration not set, please use config to setup.")
+
     async def configure(self, args: list[str] = []) -> None:
         """Configure the Mastertherm Connect CLI Shell."""
         if (
@@ -61,6 +93,8 @@ class MasterthermCLIShell:
                 )
                 == "y"
             ):
+                self._api_configured = True
+
                 if (
                     self._input(
                         "Which version of the App do you use?\n"
@@ -85,6 +119,7 @@ class MasterthermCLIShell:
                 self._input("Do you wish to configure a local IP? (y/n): ", ["y", "n"])
                 == "y"
             ):
+                self._local_configured = True
                 self._local_ip = input("Enter the local IP address of your heat pump: ")
                 if self._hp_type is None:
                     hp_type = self._input(
@@ -104,6 +139,28 @@ class MasterthermCLIShell:
                 == "y"
             ):
                 # Here we would save the configuration to a file or database
+                config = configparser.ConfigParser()
+
+                config.add_section("SETUP")
+                config.set("SETUP", "configured", "true")
+                config.set("SETUP", "Api_Configure", str(self._api_configured))
+                config.set("SETUP", "Local_Configure", str(self._local_configured))
+
+                if self._api_configured:
+                    config.add_section("API")
+                    config.set("API", "api_version", self._api_version)
+                    config.set("API", "username", self._username)
+                    config.set("API", "password", self._password)
+                    config.set("API", "hp_type", self._hp_type)
+
+                if self._local_configured:
+                    config.add_section("LOCAL")
+                    config.set("LOCAL", "local_ip", self._local_ip)
+                    config.set("LOCAL", "hp_type", self._hp_type)
+
+                with open(self._config_file, "w") as configfile:
+                    config.write(configfile)
+
                 _LOGGER.info("Configuration saved.")
 
             self._configured = True
@@ -135,11 +192,15 @@ class MasterthermCLIShell:
 
         return 0
 
-    async def start(self) -> None:
+    async def start(self, config_file: str = "masterthermconnect.cfg") -> None:
         """Run the CLI shell."""
         _LOGGER.info(
             "Entering Mastertherm Connect CLI Shell. Type 'help' for commands."
         )
+        self._config_file = config_file
+
+        await self.load_config()
+
         while True:
             command = input("$> ")
             if command == "exit":
@@ -151,30 +212,70 @@ class MasterthermCLIShell:
                 await self.process_command(items[0], items[1:])
 
 
-def main() -> str | int | None:
+def get_arguments(argv) -> argparse.Namespace:
+    """Read the Arguments passed in."""
+    # formatter_class=argparse.MetavarTypeHelpFormatter,
+    parser = argparse.ArgumentParser(
+        prog="masterthermconnect",
+        description=(
+            "Mastertherm Connect CLI Tester, used for debug purposes, "
+            "allows you to get and set registers and other information for testing"
+        ),
+        epilog=(
+            "If using the API, please ensure you do not ping the server too often, or you may get your IP blocked."
+        ),
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version="Mastertherm Connect CLI Tester Version: " + __version__,
+        help="display the Mastertherm Connect CLI Tester Version",
+    )
+
+    # Sub Commands are get and set:
+    subparsers = parser.add_subparsers(
+        title="commands",
+        description=(
+            "Valid commands, use -h to get more help after the command for specific help."
+        ),
+        help="Retrieve and Send data to or from the API.",
+    )
+
+    parser_shell = subparsers.add_parser("shell", help="start the CLI Shell")
+    parser_shell.set_defaults(command="shell")
+    parser_shell.add_argument(
+        "-c", "--config", type=str, help="the cnfiguration file, to load."
+    )
+
+    return parser.parse_args(argv)
+
+
+def main(argv=None) -> str | int | None:
     """Mastertherm Connect CLI."""
     _LOGGER.setLevel(logging.INFO)
     _LOGGER.addHandler(logging.StreamHandler(sys.stdout))
 
-    # Process Version Argument
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "-v" or sys.argv[1] == "--version":
-            _LOGGER.info("Mastertherm Connect CLI Tester Shell Version %s", __version__)
-            return 0
-        elif sys.argv[1] == "-h" or sys.argv[1] == "--help":
-            _LOGGER.info(
-                "Mastertherm Connect CLI Tester Shell Version %s.\n"
-                "Run without arguments to enter the shell.",
-                __version__,
-            )
-            return 0
-        else:
-            _LOGGER.info("Unknown argument: %s", sys.argv[1])
-            return 1
+    # Arg Parse raises SystemExit, get return value
+    try:
+        args: argparse.Namespace = get_arguments(argv)
+    except SystemExit as ex:
+        return ex.code
 
-    # Start the CLI Shell
-    shell = MasterthermCLIShell()
-    return asyncio.run(shell.start())
+    # Check we have any arguments
+    try:
+        if not args.command:
+            return -1
+    except Exception:
+        _LOGGER.info("usage: masterthermconnect -h")
+        return 0
+
+    if args.command == "shell":
+        shell = MasterthermCLIShell()
+        if args.config:
+            return asyncio.run(shell.start(args.config))
+        else:
+            return asyncio.run(shell.start())
 
 
 if __name__ == "__main__":
