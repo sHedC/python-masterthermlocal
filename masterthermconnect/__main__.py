@@ -48,30 +48,35 @@ class MasterthermCLIShell:
         modbus.close()
         return 0
 
-    async def load_config(self) -> None:
+    async def load_config(self) -> int:
         """Load configuration from a file."""
         config = configparser.ConfigParser()
         config.read(self._config_file)
 
-        if "SETUP" in config:
-            self._api_configured = config.getboolean(
-                "SETUP", "Api_Configure", fallback=False
-            )
-            self._local_configured = config.getboolean(
-                "SETUP", "Local_Configure", fallback=False
-            )
-
-            if self._api_configured:
-                self._api_version = config.get("API", "api_version", fallback=None)
-                self._username = config.get("API", "username", fallback=None)
-                self._password = config.get("API", "password", fallback=None)
-                self._hp_type = config.get("API", "hp_type", fallback=None)
-
-            if self._local_configured:
-                self._local_ip = config.get("LOCAL", "local_ip", fallback=None)
-                self._hp_type = config.get("LOCAL", "hp_type", fallback=None)
-        else:
+        if "SETUP" not in config:
             _LOGGER.error("Configuration not set, please use config to setup.")
+            return -1
+
+        self._api_configured = config.getboolean(
+            "SETUP", "Api_Configure", fallback=False
+        )
+        self._local_configured = config.getboolean(
+            "SETUP", "Local_Configure", fallback=False
+        )
+
+        if self._api_configured:
+            self._api_version = config.get("API", "api_version", fallback=None)
+            self._username = config.get("API", "username", fallback=None)
+            self._hp_type = config.get("API", "hp_type", fallback=None)
+
+        if self._local_configured:
+            self._local_ip = config.get("LOCAL", "local_ip", fallback=None)
+            self._hp_type = config.get("LOCAL", "hp_type", fallback=None)
+
+        if self._password is None:
+            self._password = input("Enter your login password: ")
+
+        return 0
 
     async def configure(self, args: list[str] = []) -> None:
         """Configure the Mastertherm Connect CLI Shell."""
@@ -150,7 +155,6 @@ class MasterthermCLIShell:
                     config.add_section("API")
                     config.set("API", "api_version", self._api_version)
                     config.set("API", "username", self._username)
-                    config.set("API", "password", self._password)
                     config.set("API", "hp_type", self._hp_type)
 
                 if self._local_configured:
@@ -192,14 +196,21 @@ class MasterthermCLIShell:
 
         return 0
 
-    async def start(self, config_file: str = "masterthermconnect.cfg") -> None:
+    async def start(
+        self,
+        config_file: str = "masterthermconnect.cfg",
+        password: str = "",
+    ) -> None:
         """Run the CLI shell."""
         _LOGGER.info(
-            "Entering Mastertherm Connect CLI Shell. Type 'help' for commands."
+            "Entering Mastertherm Connect CLI Shell. Type 'help' for commands.\n"
         )
         self._config_file = config_file
+        if password != "":
+            self._password = password
 
-        await self.load_config()
+        if await self.load_config() == -1:
+            await self.configure([])
 
         while True:
             command = input("$> ")
@@ -245,7 +256,10 @@ def get_arguments(argv) -> argparse.Namespace:
     parser_shell = subparsers.add_parser("shell", help="start the CLI Shell")
     parser_shell.set_defaults(command="shell")
     parser_shell.add_argument(
-        "-c", "--config", type=str, help="the cnfiguration file, to load."
+        "-c", "--config", type=str, help="the configuration file, to use."
+    )
+    parser_shell.add_argument(
+        "-p", "--password", type=str, help="the API login password."
     )
 
     return parser.parse_args(argv)
@@ -273,9 +287,11 @@ def main(argv=None) -> str | int | None:
     if args.command == "shell":
         shell = MasterthermCLIShell()
         if args.config:
-            return asyncio.run(shell.start(args.config))
+            return asyncio.run(
+                shell.start(config_file=args.config, password=args.password)
+            )
         else:
-            return asyncio.run(shell.start())
+            return asyncio.run(shell.start(password=args.password))
 
 
 if __name__ == "__main__":
