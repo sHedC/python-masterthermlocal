@@ -7,6 +7,7 @@ import logging
 import sys
 
 from masterthermconnect import __version__
+from masterthermconnect.api import MasterthermAPI
 from masterthermconnect.modbus import MasterthermModbus
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class MasterthermCLIShell:
         config = configparser.ConfigParser()
         config.read(self._config_file)
 
+        # Check if there is a setup to load, if not, return -1
         if "SETUP" not in config:
             _LOGGER.error("Configuration not set, please use config to setup.")
             return -1
@@ -64,15 +66,18 @@ class MasterthermCLIShell:
             "SETUP", "Local_Configure", fallback=False
         )
 
+        # Load the API configuration if configured
         if self._api_configured:
             self._api_version = config.get("API", "api_version", fallback=None)
             self._username = config.get("API", "username", fallback=None)
             self._hp_type = config.get("API", "hp_type", fallback=None)
 
+        # Load the local configuration if configured
         if self._local_configured:
             self._local_ip = config.get("LOCAL", "local_ip", fallback=None)
             self._hp_type = config.get("LOCAL", "hp_type", fallback=None)
 
+        # If Password is not passed, ask for it.
         if self._password is None:
             self._password = input("Enter your login password: ")
 
@@ -118,6 +123,12 @@ class MasterthermCLIShell:
                 self._password = input("Enter your login password: ")
 
                 #   Check Login and Lookup HP Type
+                api = MasterthermAPI(
+                    self._username,
+                    self._password,
+                    session,
+                    api_version=self._api_version,
+                )
 
             # Ask for Local IP.
             if (
@@ -170,21 +181,13 @@ class MasterthermCLIShell:
             self._configured = True
             _LOGGER.info("Configuration complete.")
 
-    def display_help(self, help_args: str) -> None:
-        """Display help information."""
-        _LOGGER.info(
-            "Mastertherm Connect CLI tester, Shell Available Commands:\n"
-            "  - exit: Exit the shell\n"
-            "  - help: Display this help message\n"
-        )
-
     async def process_command(self, command: str, args: list[str]) -> int:
         """Process a command entered in the shell."""
         # Configure local IP, Login URL, User, Password, HP Type
         # maybe config then a question/ answer, config save and config load?
 
         match command:
-            case "config" | "cfg" | "configure":
+            case "config":
                 await self.configure(args)
             case "get":
                 if self._configured:
@@ -221,6 +224,15 @@ class MasterthermCLIShell:
             else:
                 items: list[str] = command.split(" ")
                 await self.process_command(items[0], items[1:])
+
+    def display_help(self, help_args: str) -> None:
+        """Display help information."""
+        _LOGGER.info(
+            "Mastertherm Connect CLI tester, Shell Available Commands:\n"
+            "  - help: Display this help message\n"
+            "  - config: Configure the Mastertherm Connect CLI Shell\n"
+            "  - exit: Exit the shell\n"
+        )
 
 
 def get_arguments(argv) -> argparse.Namespace:
