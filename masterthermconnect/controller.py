@@ -15,6 +15,8 @@ class MasterthermController:
         password: str | None = None,
         session: ClientSession | None = None,
         api_version: str = "v1",
+        use_api: bool = True,
+        use_local: bool = False,
         modbus_addr: str | None = None,
         hp_type: str | None = None,
     ) -> None:
@@ -22,6 +24,7 @@ class MasterthermController:
 
         For API Provide username, password, session, api_version
         For Local Provide modbus_addr and hp_type (if no API)
+        Order is default to provide backward compatibility with only API.
 
         Args:
             username: The mastertherm login username
@@ -31,6 +34,8 @@ class MasterthermController:
                 "v1"  : Original version, data response in varfile_mt1_config1
                 "v1b" : Original version, datalast_info_update response in varfile_mt1_config2
                 "v2"  : New version since 2022 response in varFileData
+            use_api: True if using API
+            use_local: True if using Local access
             modbus_addr: The Modbus IP Address
             hp_type: str: The HeatPump Type, known types:
                 "pco5" : Older HP Type Before 2022
@@ -63,9 +68,7 @@ class MasterthermController:
         # }
         self.__devices = {}
 
-    async def connect_api(
-        self, username: str, password: str, api_ver: str = "v1"
-    ) -> bool:
+    async def connect(self) -> bool:
         """Connect to the API, check the supported roles and update if required.
 
         Args:
