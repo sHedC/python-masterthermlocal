@@ -44,7 +44,7 @@ class MasterthermModbus:
         start = self._reg_map["A"]["start"]
         for i in range(0, 6):
             result = await self._client.read_holding_registers(
-                (i * 100), count=100, slave=slave
+                (i * 100) + start, count=100, slave=slave
             )
             for j in range(0, 100):
                 reg[f"A_{(i * 100) + j}"] = (

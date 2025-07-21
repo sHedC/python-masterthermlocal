@@ -6,8 +6,11 @@ import configparser
 import logging
 import sys
 
-from masterthermconnect import __version__
+from aiohttp import ClientSession, ClientTimeout
+
+from masterthermconnect import MasterthermController, __version__
 from masterthermconnect.api import MasterthermAPI
+from masterthermconnect.exceptions import MasterthermError
 from masterthermconnect.modbus import MasterthermModbus
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -19,10 +22,13 @@ class MasterthermCLIShell:
     def __init__(self) -> None:
         """Initialise the Mastertherm Connect CLI Shell."""
         self._config_file: str = "masterthermconnect.cfg"
-
+        self._controller: MasterthermController = MasterthermController()
         self._configured = False
+
         self._api_configured: bool = False
+        self._api_connected: bool = False
         self._local_configured: bool = False
+        self._local_connected: bool = False
 
         self._api_version: str | None = None
         self._username: str | None = None
@@ -37,6 +43,33 @@ class MasterthermCLIShell:
             answer = input(message)
 
         return answer.lower()
+
+    async def _setup_api(self) -> bool:
+        """Connect to the Mastertherm API."""
+        if not self._api_configured:
+            raise ValueError("API not configured. Please run 'config' first.")
+
+        if (
+            self._api_version is None
+            or self._username is None
+            or self._password is None
+        ):
+            raise ValueError("API configuration incomplete.")
+
+        session = ClientSession(timeout=ClientTimeout(total=10))
+        success = False
+        try:
+            self._api = MasterthermAPI(
+                self._username,
+                self._password,
+                session=session,
+                api_version=self._api_version,
+            )
+            await self._api.connect()
+        except MasterthermError as mte:
+            _LOGGER.error("Error %s", mte.message)
+
+        return success
 
     async def get_command(self, login_user: str, login_pass: str, args) -> int:
         """Get Command to get data/ registry/ devices."""
@@ -71,6 +104,11 @@ class MasterthermCLIShell:
             self._api_version = config.get("API", "api_version", fallback=None)
             self._username = config.get("API", "username", fallback=None)
             self._hp_type = config.get("API", "hp_type", fallback=None)
+
+            #   Check Login and Lookup HP Type
+            self._api_connected = False
+            if await self._setup_api():
+                self._api_connected = True
 
         # Load the local configuration if configured
         if self._local_configured:
@@ -122,13 +160,13 @@ class MasterthermCLIShell:
                 self._username = input("Enter your login username: ")
                 self._password = input("Enter your login password: ")
 
-                #   Check Login and Lookup HP Type
-                api = MasterthermAPI(
-                    self._username,
-                    self._password,
-                    session,
-                    api_version=self._api_version,
-                )
+                #   Setup and Connect API
+                self._api_connected = False
+                if await self._controller.connect_api(
+                    self._username, self._password, self._api_version
+                ):
+                    self._hp_type = ""
+                    self._api_connected = True
 
             # Ask for Local IP.
             if (
