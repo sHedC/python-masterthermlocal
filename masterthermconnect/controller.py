@@ -22,9 +22,10 @@ class MasterthermController:
     ) -> None:
         """Initialize the MasterthermController.
 
-        For API Provide username, password, session, api_version
-        For Local Provide modbus_addr and hp_type (if no API)
-        Order is default to provide backward compatibility with only API.
+        Original call will work with username, password, session and api_version,
+        to support the new version have added additional parameters and made all optional.
+            For API Provide username, password, session, api_version
+            For Local Provide modbus_addr and hp_type (if no API)
 
         Args:
             username: The mastertherm login username
@@ -34,8 +35,8 @@ class MasterthermController:
                 "v1"  : Original version, data response in varfile_mt1_config1
                 "v1b" : Original version, datalast_info_update response in varfile_mt1_config2
                 "v2"  : New version since 2022 response in varFileData
-            use_api: True if using API
-            use_local: True if using Local access
+            use_api: True if using API, default True
+            use_local: True if using Local access, Default False
             modbus_addr: The Modbus IP Address
             hp_type: str: The HeatPump Type, known types:
                 "pco5" : Older HP Type Before 2022
@@ -67,6 +68,70 @@ class MasterthermController:
         #   }
         # }
         self.__devices = {}
+
+    async def enable_api(self) -> bool:
+        """Enable the API Interface."""
+        """Initialize the MasterthermController.
+
+        Original call will work with username, password, session and api_version,
+        to support the new version have added additional parameters and made all optional.
+            For API Provide username, password, session, api_version
+            For Local Provide modbus_addr and hp_type (if no API)
+
+        Args:
+            username: The mastertherm login username
+            password: The mastertherm login password
+            session: An aiohttp Client Session
+            api_version: The version of the API, mainly the host
+                "v1"  : Original version, data response in varfile_mt1_config1
+                "v1b" : Original version, datalast_info_update response in varfile_mt1_config2
+                "v2"  : New version since 2022 response in varFileData
+            use_api: True if using API, default True
+            use_local: True if using Local access, Default False
+            modbus_addr: The Modbus IP Address
+            hp_type: str: The HeatPump Type, known types:
+                "pco5" : Older HP Type Before 2022
+                "uPC" : Newer After 2022
+        Returns:
+            The MasterthermController object
+
+        Raises:
+            MasterthermUnsupportedVersion: API Version is not supported.
+
+        """
+        return True
+
+    async def enable_ip(self) -> bool:
+        """Enable the Local IP Interface."""
+        """Initialize the MasterthermController.
+
+        Original call will work with username, password, session and api_version,
+        to support the new version have added additional parameters and made all optional.
+            For API Provide username, password, session, api_version
+            For Local Provide modbus_addr and hp_type (if no API)
+
+        Args:
+            username: The mastertherm login username
+            password: The mastertherm login password
+            session: An aiohttp Client Session
+            api_version: The version of the API, mainly the host
+                "v1"  : Original version, data response in varfile_mt1_config1
+                "v1b" : Original version, datalast_info_update response in varfile_mt1_config2
+                "v2"  : New version since 2022 response in varFileData
+            use_api: True if using API, default True
+            use_local: True if using Local access, Default False
+            modbus_addr: The Modbus IP Address
+            hp_type: str: The HeatPump Type, known types:
+                "pco5" : Older HP Type Before 2022
+                "uPC" : Newer After 2022
+        Returns:
+            The MasterthermController object
+
+        Raises:
+            MasterthermUnsupportedVersion: API Version is not supported.
+
+        """
+        return True
 
     async def connect(self) -> bool:
         """Connect to the API, check the supported roles and update if required.

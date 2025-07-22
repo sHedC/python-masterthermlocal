@@ -22,7 +22,7 @@ class MasterthermCLIShell:
     def __init__(self) -> None:
         """Initialise the Mastertherm Connect CLI Shell."""
         self._config_file: str = "masterthermconnect.cfg"
-        self._controller: MasterthermController = MasterthermController()
+        self._controller: MasterthermController | None = None
         self._configured = False
 
         self._api_configured: bool = False
