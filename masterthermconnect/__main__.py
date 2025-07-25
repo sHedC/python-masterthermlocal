@@ -22,7 +22,7 @@ class MasterthermCLIShell:
     def __init__(self) -> None:
         """Initialise the Mastertherm Connect CLI Shell."""
         self._config_file: str = "masterthermconnect.cfg"
-        self._controller: MasterthermController | None = None
+        self._controller: MasterthermController = MasterthermController()
         self._configured = False
 
         self._api_configured: bool = False
@@ -65,7 +65,7 @@ class MasterthermCLIShell:
                 session=session,
                 api_version=self._api_version,
             )
-            await self._api.connect()
+            # await self._api.connect()
         except MasterthermError as mte:
             _LOGGER.error("Error %s", mte.message)
 
@@ -162,9 +162,7 @@ class MasterthermCLIShell:
 
                 #   Setup and Connect API
                 self._api_connected = False
-                if await self._controller.connect_api(
-                    self._username, self._password, self._api_version
-                ):
+                if await self._controller.enable_local():
                     self._hp_type = ""
                     self._api_connected = True
 

@@ -101,25 +101,12 @@ class MasterthermController:
         """
         return True
 
-    async def enable_ip(self) -> bool:
-        """Enable the Local IP Interface."""
-        """Initialize the MasterthermController.
+    async def enable_local(self) -> bool:
+        """Enable the Local IP Interface.
 
-        Original call will work with username, password, session and api_version,
-        to support the new version have added additional parameters and made all optional.
-            For API Provide username, password, session, api_version
-            For Local Provide modbus_addr and hp_type (if no API)
+        Provide the details for local connect, requires static IP on heatpump.
 
         Args:
-            username: The mastertherm login username
-            password: The mastertherm login password
-            session: An aiohttp Client Session
-            api_version: The version of the API, mainly the host
-                "v1"  : Original version, data response in varfile_mt1_config1
-                "v1b" : Original version, datalast_info_update response in varfile_mt1_config2
-                "v2"  : New version since 2022 response in varFileData
-            use_api: True if using API, default True
-            use_local: True if using Local access, Default False
             modbus_addr: The Modbus IP Address
             hp_type: str: The HeatPump Type, known types:
                 "pco5" : Older HP Type Before 2022
@@ -128,7 +115,7 @@ class MasterthermController:
             The MasterthermController object
 
         Raises:
-            MasterthermUnsupportedVersion: API Version is not supported.
+            MasterthermUnsupportedType: Heat Pump Type is not supported.
 
         """
         return True

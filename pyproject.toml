@@ -14,18 +14,21 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-keywords = ["Mastertherm heatpump", "local", "client"]
-dependencies = ["aiohttp>=3.12.2", "natsort>=8.4.0"]
+keywords = ["Mastertherm heatpump", "local", "api", "client"]
+dependencies = [
+    "aiohttp>=3.9.1",
+    "natsort>=8.4.0"
+]
 requires-python = ">=3.11,<3.14"
 
 [project.optional-dependencies]
 dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
 
-[project.urls]
-Homepage = "https://github.com/sHedC/python-masterthermconnect"
-
 [project.scripts]
 masterthermconnect = "masterthermconnect.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/sHedC/python-masterthermconnect"
 
 [tool.bumpver]
 current_version = "0.0.0"
