@@ -161,10 +161,6 @@ class MasterthermCLIShell:
                 self._password = input("Enter your login password: ")
 
                 #   Setup and Connect API
-                self._api_connected = False
-                if await self._controller.enable_local():
-                    self._hp_type = ""
-                    self._api_connected = True
 
             # Ask for Local IP.
             if (

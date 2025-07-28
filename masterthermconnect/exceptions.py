@@ -4,7 +4,7 @@
 class MasterthermError(Exception):
     """Base Exception for all Mastertherm Exceptions."""
 
-    def __init__(self, status, message):
+    def __init__(self, status: str | int, message: str):
         """Initialize."""
         super().__init__(status)
         self.status = status

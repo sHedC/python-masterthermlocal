@@ -15,17 +15,12 @@ class MasterthermController:
         password: str | None = None,
         session: ClientSession | None = None,
         api_version: str = "v1",
-        use_api: bool = True,
-        use_local: bool = False,
-        modbus_addr: str | None = None,
-        hp_type: str | None = None,
     ) -> None:
         """Initialize the MasterthermController.
 
-        Original call will work with username, password, session and api_version,
-        to support the new version have added additional parameters and made all optional.
-            For API Provide username, password, session, api_version
-            For Local Provide modbus_addr and hp_type (if no API)
+        Original call will work with username, password, session and api_version, all are optional, if
+        to support the new version have added additional parameters and made all optional,
+        if parameter is entered will validate all requried.
 
         Args:
             username: The mastertherm login username
@@ -35,12 +30,6 @@ class MasterthermController:
                 "v1"  : Original version, data response in varfile_mt1_config1
                 "v1b" : Original version, datalast_info_update response in varfile_mt1_config2
                 "v2"  : New version since 2022 response in varFileData
-            use_api: True if using API, default True
-            use_local: True if using Local access, Default False
-            modbus_addr: The Modbus IP Address
-            hp_type: str: The HeatPump Type, known types:
-                "pco5" : Older HP Type Before 2022
-                "uPC" : Newer After 2022
         Returns:
             The MasterthermController object
 
@@ -51,7 +40,18 @@ class MasterthermController:
         self._api: MasterthermAPI | None = None
         self._modbus: MasterthermModbus | None = None
 
+        # Initialize Values:
+        self._api_configured = False
+        self._modbus_configured = False
+
         # Check we have all parameters.
+        if username:
+            if not (password and session):
+                raise ValueError(
+                    "Provide username, password and session together or no parameters."
+                )
+            else:
+                self._api_configured = True
 
         # The device structure is held as a dictionary with the following format:
         # {
@@ -69,14 +69,16 @@ class MasterthermController:
         # }
         self.__devices = {}
 
-    async def enable_api(self) -> bool:
-        """Enable the API Interface."""
-        """Initialize the MasterthermController.
+    async def enable_api(
+        self,
+        username: str,
+        password: str,
+        session: ClientSession,
+        api_version: str = "v1",
+    ) -> bool:
+        """Enable the API Interface.
 
-        Original call will work with username, password, session and api_version,
-        to support the new version have added additional parameters and made all optional.
-            For API Provide username, password, session, api_version
-            For Local Provide modbus_addr and hp_type (if no API)
+        For API Provide username, password, session, api_version.
 
         Args:
             username: The mastertherm login username
@@ -86,12 +88,7 @@ class MasterthermController:
                 "v1"  : Original version, data response in varfile_mt1_config1
                 "v1b" : Original version, datalast_info_update response in varfile_mt1_config2
                 "v2"  : New version since 2022 response in varFileData
-            use_api: True if using API, default True
-            use_local: True if using Local access, Default False
-            modbus_addr: The Modbus IP Address
-            hp_type: str: The HeatPump Type, known types:
-                "pco5" : Older HP Type Before 2022
-                "uPC" : Newer After 2022
+
         Returns:
             The MasterthermController object
 
@@ -99,10 +96,11 @@ class MasterthermController:
             MasterthermUnsupportedVersion: API Version is not supported.
 
         """
+        self._api_configured = True
         return True
 
-    async def enable_local(self) -> bool:
-        """Enable the Local IP Interface.
+    async def enable_modbus(self, modbus_addr: str, hp_type: str | None = None) -> bool:
+        """Enable the Modbus IP Interface.
 
         Provide the details for local connect, requires static IP on heatpump.
 
@@ -118,9 +116,10 @@ class MasterthermController:
             MasterthermUnsupportedType: Heat Pump Type is not supported.
 
         """
+        self._modbus_configured = True
         return True
 
-    async def connect(self) -> bool:
+    async def connect(self, reload_modules: bool = False) -> bool:
         """Connect to the API, check the supported roles and update if required.
 
         Args:
