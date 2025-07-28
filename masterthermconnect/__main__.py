@@ -71,7 +71,9 @@ class MasterthermCLIShell:
 
         return success
 
-    async def get_command(self, login_user: str, login_pass: str, args) -> int:
+    async def get_command(
+        self, login_user: str, login_pass: str, args: list[str]
+    ) -> int:
         """Get Command to get data/ registry/ devices."""
         modbus = MasterthermModbus("172.16.46.100", "mt_0")
         await modbus.connect()
@@ -267,7 +269,7 @@ class MasterthermCLIShell:
         )
 
 
-def get_arguments(argv) -> argparse.Namespace:
+def get_arguments(argv: list[str]) -> argparse.Namespace:
     """Read the Arguments passed in."""
     # formatter_class=argparse.MetavarTypeHelpFormatter,
     parser = argparse.ArgumentParser(
@@ -309,7 +311,7 @@ def get_arguments(argv) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv=None) -> str | int | None:
+def main(argv: list[str]) -> str | int | None:
     """Mastertherm Connect CLI."""
     _LOGGER.setLevel(logging.INFO)
     _LOGGER.addHandler(logging.StreamHandler(sys.stdout))
@@ -339,4 +341,4 @@ def main(argv=None) -> str | int | None:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))
